@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include stock_reco_serial *.css
+recursive-include stock_reco_serial *.csv
+recursive-include stock_reco_serial *.html
+recursive-include stock_reco_serial *.ico
+recursive-include stock_reco_serial *.js
+recursive-include stock_reco_serial *.json
+recursive-include stock_reco_serial *.md
+recursive-include stock_reco_serial *.png
+recursive-include stock_reco_serial *.py
+recursive-include stock_reco_serial *.svg
+recursive-include stock_reco_serial *.txt
+recursive-exclude stock_reco_serial *.pyc
