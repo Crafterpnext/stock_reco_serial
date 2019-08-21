@@ -88,11 +88,11 @@ fixtures = [
                 "in",
                 [
                     "Stock Reconciliation Item-avg_valuation_rate",
-                    "Stock Reconciliation Item-serial_no_and_batch_section_",
-                    "Stock Reconciliation Item-serial_no",
-                    "Stock Reconciliation Item-column_break_11",
-                    "Stock Reconciliation Item-batch_no",
-                    "Stock Reconciliation Item-current_serial_no"
+                    "Stock Reconciliation Item-serial_and_batch_section_",
+                    "Stock Reconciliation Item-serial_no_craft",
+                    "Stock Reconciliation Item-column_craft",
+                    "Stock Reconciliation Item-batch_no_craft",
+                    "Stock Reconciliation Item-current_serial_no_craft"
                 ]
             ]
         ]

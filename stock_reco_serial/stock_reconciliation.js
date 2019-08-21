@@ -94,7 +94,7 @@ frappe.ui.form.on("Stock Reconciliation", {
 					frappe.model.set_value(cdt, cdn, "current_valuation_rate", r.message.rate);
 					frappe.model.set_value(cdt, cdn, "current_amount", r.message.rate * r.message.qty);
 					frappe.model.set_value(cdt, cdn, "amount", r.message.rate * r.message.qty);
-					frappe.model.set_value(cdt, cdn, "current_serial_no", r.message.serial_nos);
+					frappe.model.set_value(cdt, cdn, "current_serial_no_craft", r.message.serial_nos);
 				}
 			});
 		}

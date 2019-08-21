@@ -48,18 +48,16 @@ def custom_validate(self):
 		self.validate_expense_account()
 		self.set_total_qty_and_amount()
 
-		if self._action=="submit":
-			self.make_batches('warehouse')
 
 def custom_remove_items_with_no_change(self):
 		"""Remove items if qty or rate is not changed"""
 		self.difference_amount = 0.0
 		def _changed(item):
 			item_dict = get_stock_balance_for(item.item_code, item.warehouse,
-				self.posting_date, self.posting_time, batch_no=item.batch_no)
+				self.posting_date, self.posting_time, batch_no_craft=item.batch_no_craft)
 
 			if (((item.qty is None or item.qty==item_dict.get("qty")) and
-				(item.valuation_rate is None or item.valuation_rate==item_dict.get("rate")) and not item.serial_no)):
+				(item.valuation_rate is None or item.valuation_rate==item_dict.get("rate")) and not item.serial_no_craft)):
 				return False
 			else:
 				# set default as current rates
@@ -70,7 +68,7 @@ def custom_remove_items_with_no_change(self):
 					item.valuation_rate = item_dict.get("rate")
 
 				if item_dict.get("serial_nos"):
-					item.current_serial_no = item_dict.get("serial_nos")
+					item.current_serial_no_craft = item_dict.get("serial_nos")
 
 				item.current_qty = item_dict.get("qty")
 				item.current_valuation_rate = item_dict.get("rate")
@@ -92,7 +90,7 @@ def custom_remove_items_with_no_change(self):
 			frappe.msgprint(_("Removed items with no change in quantity or value."))
 
 def get_stock_balance_for(item_code, warehouse,
-	posting_date, posting_time, batch_no=None, with_valuation_rate= True):
+	posting_date, posting_time, batch_no_craft=None, with_valuation_rate= True):
 	frappe.has_permission("Stock Reconciliation", "write", throw = True)
 
 	item_dict = frappe.db.get_value("Item", item_code,
@@ -107,7 +105,7 @@ def get_stock_balance_for(item_code, warehouse,
 			posting_date, posting_time, with_valuation_rate=with_valuation_rate)
 
 	if item_dict.get("has_batch_no"):
-		qty = get_batch_qty(batch_no, warehouse) or 0
+		qty = get_batch_qty(batch_no_craft, warehouse) or 0
 
 	return {
 		'qty': qty,

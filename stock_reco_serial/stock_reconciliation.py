@@ -39,9 +39,43 @@ class StockReconciliation(StockController):
 		self.update_stock_ledger()
 		self.make_gl_entries()
 
-		from erpnext.stock.doctype.serial_no.serial_no import update_serial_nos_after_submit
-		update_serial_nos_after_submit(self, "items")
+		# from erpnext.stock.doctype.serial_no.serial_no import update_serial_nos_after_submit
+		# update_serial_nos_after_submit(self, "items")
 
+		stock_ledger_entries = frappe.db.sql("""select voucher_detail_no, serial_no, actual_qty, warehouse
+			from `tabStock Ledger Entry` where voucher_type=%s and voucher_no=%s""",
+			(self.doctype, self.name), as_dict=True)
+
+		if not stock_ledger_entries: return
+
+		for d in self.get("items"):
+			update_rejected_serial_nos = True if (self.doctype in ("Purchase Receipt", "Purchase Invoice")
+				and d.rejected_qty) else False
+			accepted_serial_nos_updated = False
+			if self.doctype == "Stock Entry":
+				warehouse = d.t_warehouse
+				qty = d.transfer_qty
+			else:
+				warehouse = d.warehouse
+				qty = (d.qty if self.doctype == "Stock Reconciliation"
+					else d.stock_qty)
+
+			for sle in stock_ledger_entries:
+				if sle.voucher_detail_no==d.name:
+					if not accepted_serial_nos_updated and qty and abs(sle.actual_qty)==qty \
+						and sle.warehouse == warehouse and sle.serial_no != d.serial_no_craft:
+							d.serial_no_craft = sle.serial_no
+							frappe.db.set_value(d.doctype, d.name, "serial_no_craft", sle.serial_no)
+							accepted_serial_nos_updated = True
+							if not update_rejected_serial_nos:
+								break
+					elif update_rejected_serial_nos and abs(sle.actual_qty)==d.rejected_qty \
+						and sle.warehouse == d.rejected_warehouse and sle.serial_no != d.rejected_serial_no:
+							d.rejected_serial_no = sle.serial_no
+							frappe.db.set_value(d.doctype, d.name, "rejected_serial_no", sle.serial_no)
+							update_rejected_serial_nos = False
+							if accepted_serial_nos_updated:
+								break
 	def on_cancel(self):
 		self.delete_and_repost_sle()
 		self.make_gl_entries_on_cancel()
@@ -51,10 +85,10 @@ class StockReconciliation(StockController):
 		self.difference_amount = 0.0
 		def _changed(item):
 			item_dict = get_stock_balance_for(item.item_code, item.warehouse,
-				self.posting_date, self.posting_time, batch_no=item.batch_no)
+				self.posting_date, self.posting_time, batch_no=item.batch_no_craft)
 			if (((item.qty is None or item.qty==item_dict.get("qty")) and
-				(item.valuation_rate is None or item.valuation_rate==item_dict.get("rate")) and not item.serial_no)
-				or (item.serial_no and item.serial_no == item_dict.get("serial_nos"))):
+				(item.valuation_rate is None or item.valuation_rate==item_dict.get("rate")) and not item.serial_no_craft)
+				or (item.serial_no_craft and item.serial_no_craft == item_dict.get("serial_nos"))):
 				return False
 			else:
 				# set default as current rates
@@ -65,7 +99,7 @@ class StockReconciliation(StockController):
 					item.valuation_rate = item_dict.get("rate")
 
 				if item_dict.get("serial_nos"):
-					item.current_serial_no = item_dict.get("serial_nos")
+					item.current_serial_no_craft = item_dict.get("serial_nos")
 
 				item.current_qty = item_dict.get("qty")
 				item.current_valuation_rate = item_dict.get("rate")
@@ -98,7 +132,7 @@ class StockReconciliation(StockController):
 		for row_num, row in enumerate(self.items):
 			# find duplicates
 			key = [row.item_code, row.warehouse]
-			for field in ['serial_no', 'batch_no']:
+			for field in ['serial_no_craft', 'batch_no_craft']:
 				if row.get(field):
 					key.append(row.get(field))
 
@@ -163,11 +197,11 @@ class StockReconciliation(StockController):
 			validate_is_stock_item(item_code, item.is_stock_item, verbose=0)
 
 			# item should not be serialized
-			if item.has_serial_no and not row.serial_no and not item.serial_no_series:
+			if item.has_serial_no and not row.serial_no_craft and not item.serial_no_series:
 				raise frappe.ValidationError(_("Serial no(s) required for serialized item {0}").format(item_code))
 
 			# item managed batch-wise not allowed
-			if item.has_batch_no and not row.batch_no and not item.create_new_batch:
+			if item.has_batch_no and not row.batch_no_craft and not item.create_new_batch:
 				raise frappe.ValidationError(_("Batch no is required for batched item {0}").format(item_code))
 
 			# docstatus should be < 2
@@ -217,20 +251,20 @@ class StockReconciliation(StockController):
 	def get_sle_for_serialized_items(self, row, sl_entries):
 		from erpnext.stock.stock_ledger import get_previous_sle
 
-		serial_nos = get_serial_nos(row.serial_no)
+		serial_nos = get_serial_nos(row.serial_no_craft)
 
 
 		# To issue existing serial nos
-		if row.current_qty and (row.current_serial_no or row.batch_no):
+		if row.current_qty and (row.current_serial_no_craft or row.batch_no_craft):
 			args = self.get_sle_for_items(row)
 			args.update({
 				'actual_qty': -1 * row.current_qty,
-				'serial_no': row.current_serial_no,
-				'batch_no': row.batch_no,
+				'serial_no': row.current_serial_no_craft,
+				'batch_no': row.batch_no_craft,
 				'valuation_rate': row.current_valuation_rate
 			})
 
-			if row.current_serial_no:
+			if row.current_serial_no_craft:
 				args.update({
 					'qty_after_transaction': 0,
 				})
@@ -280,7 +314,7 @@ class StockReconciliation(StockController):
 
 			sl_entries.append(args)
 
-		if serial_nos == get_serial_nos(row.current_serial_no):
+		if serial_nos == get_serial_nos(row.current_serial_no_craft):
 			# update valuation rate
 			self.update_valuation_rate_for_serial_nos(row, serial_nos)
 
@@ -292,8 +326,8 @@ class StockReconciliation(StockController):
 	def get_sle_for_items(self, row, serial_nos=None):
 		"""Insert Stock Ledger Entries"""
 
-		if not serial_nos and row.serial_no:
-			serial_nos = get_serial_nos(row.serial_no)
+		if not serial_nos and row.serial_no_craft:
+			serial_nos = get_serial_nos(row.serial_no_craft)
 
 		data = frappe._dict({
 			"doctype": "Stock Ledger Entry",
@@ -308,11 +342,11 @@ class StockReconciliation(StockController):
 			"stock_uom": frappe.db.get_value("Item", row.item_code, "stock_uom"),
 			"is_cancelled": "No" if self.docstatus != 2 else "Yes",
 			"serial_no": '\n'.join(serial_nos) if serial_nos else '',
-			"batch_no": row.batch_no,
+			"batch_no": row.batch_no_craft,
 			"valuation_rate": flt(row.valuation_rate, row.precision("valuation_rate"))
 		})
 
-		if not row.batch_no:
+		if not row.batch_no_craft:
 			data.qty_after_transaction = flt(row.qty, row.precision("qty"))
 
 		return data
@@ -331,7 +365,7 @@ class StockReconciliation(StockController):
 
 		sl_entries = []
 		for row in self.items:
-			if row.serial_no or row.batch_no or row.current_serial_no:
+			if row.serial_no_craft or row.batch_no_craft or row.current_serial_no_craft:
 				self.get_sle_for_serialized_items(row, sl_entries)
 
 		if sl_entries:

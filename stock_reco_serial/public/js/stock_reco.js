@@ -25,7 +25,7 @@ frappe.ui.form.on('Stock Reconciliation Item', {
     var item = locals[cdt][cdn]
     
     frappe.model.set_value(cdt,cdn,"valuation_rate",item.avg_valuation_rate)
-    frappe.model.set_value(cdt,cdn,"serial_no",item.current_serial_no)
+    frappe.model.set_value(cdt,cdn,"serial_no_craft",item.current_serial_no_craft)
 
 
 
