@@ -11,6 +11,7 @@ class EmptyStockReconciliationItemsError(frappe.ValidationError): pass
 
 @frappe.whitelist()
 def get_serial_item_data(item_code=None, warehouse=None,posting_date=None, posting_time=None, batch_no=None, with_valuation_rate= True):
+        if item_code:
 		current_stock = frappe.db.sql("""select sum(actual_qty) from `tabBin` where item_code = '{}' """.format(item_code))
 
 		sle = frappe.db.sql("""select incoming_rate,actual_qty from `tabStock Ledger Entry` where item_code='{}' and voucher_type='Purchase Invoice' order by posting_date desc""".format(item_code))
