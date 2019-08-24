@@ -101,7 +101,9 @@ fixtures = [
 
 doc_events = {
     "Stock Reconciliation": {
-            "before_insert": "stock_reco_serial.stock_reco_serial.stock_reco.custom_on_submit",
+            "before_save": "stock_reco_serial.stock_reco_serial.stock_reco.override_methods",
+            "before_submit": "stock_reco_serial.stock_reco_serial.stock_reco.override_methods",
+            "before_insert": "stock_reco_serial.stock_reco_serial.stock_reco.override_methods",
     },
 }
 # Scheduled Tasks
