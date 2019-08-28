@@ -139,34 +139,4 @@ doc_events = {
 # 	"frappe.desk.doctype.event.event.get_events": "stock_reco_serial.event.get_events"
 # }
 
-"""from frappe import get_doc,_,ValidationError
-def custom_validate_item(self, item_code, row):
-                from erpnext.stock.doctype.item.item import validate_end_of_life, \
-                        validate_is_stock_item, validate_cancelled_item
 
-                # using try except to catch all validation msgs and display together
-
-                try:
-                        item = get_doc("Item", item_code)
-
-                        # end of life and stock item
-                        validate_end_of_life(item_code, item.end_of_life, item.disabled, verbose=0)
-                        validate_is_stock_item(item_code, item.is_stock_item, verbose=0)
-
-                        # item should not be serialized
-                        if item.has_serial_no and not row.serial_no and not item.serial_no_series:
-                                raise ValidationError(_("Serial no(s) required for serialized item {0}").format(item_code))
-
-                        # item managed batch-wise not allowed
-                        if item.has_batch_no and not row.batch_no and not item.create_new_batch:
-                                raise ValidationError(_("Batch no is required for batched item {0}").format(item_code))
-
-                        # docstatus should be < 2
-                        validate_cancelled_item(item_code, item.docstatus, verbose=0)
-
-                except Exception as e:
-                        self.validation_messages.append(_("Row # ") + ("%d: " % (row.idx)) + cstr(e))
-
-from erpnext.stock.doctype.stock_reconciliation.stock_reconciliation import StockReconciliation
-StockReconciliation.validate_item = custom_validate_item
-"""

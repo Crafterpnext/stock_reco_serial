@@ -1,7 +1,6 @@
 frappe.ui.form.on("Stock Reconciliation", {
 	onload: function(frm) {
 		
-		console.log("Hi")
 		// end of life
 		frm.set_query("item_code", "items", function(doc, cdt, cdn) {
 			return {
@@ -14,30 +13,6 @@ frappe.ui.form.on("Stock Reconciliation", {
 	}
 });
 
-
-/*frappe.ui.form.on("Stock Reconciliation Item", {
-	item_code: function(frm, cdt, cdn) {
-	
-		var d = locals[cdt][cdn];
-		frappe.call({
-				method: "stock_reco_serial.stock_reco_serial.stock_reco.get_serial_item_data",
-				args: {
-					item_code: d.item_code,
-					
-				},
-				callback: function(r) {
-				
-					if(r.message){
-						
-						frappe.model.set_value(cdt,cdn,"avg_valuation_rate",r.message.valuation_rate)
-						
-					}
-				}
-		})
-		
-	}
-
-});*/
 
 frappe.ui.form.on('Stock Reconciliation Item', {
   warehouse:function(frm, cdt, cdn) {
