@@ -20,18 +20,21 @@ def get_serial_item_data(item_code=None, warehouse=None, posting_date=None, post
         sle = frappe.db.sql(
             """select incoming_rate,actual_qty from `tabStock Ledger Entry` where item_code='{}' and voucher_type='Purchase Invoice' order by posting_date desc""".format(item_code))
         count = 0.00
+        new_count = 0.00
         lst_item = []
         valuation_rate = 0.00
         if current_stock:
 
-            for item in sle:
+            for item in sle[::-1]:
+                new_count = count
                 count = count + item[1]
 
-                lst_item.append([item[0], item[1], item[0]*item[1]])
-
                 if count >= current_stock[0][0]:
+                    lst_item.append([item[0], current_stock[0][0]-new_count, item[0]*(current_stock[0][0]-new_count)])
                     break
-
+                else:
+                    lst_item.append([item[0], item[1], item[0]*item[1]])
+           
             qty_sum = 0.00
             price_sum = 0.00
             for data in lst_item:
