@@ -497,10 +497,10 @@ def get_stock_balance_for(item_code, warehouse,
 	if item_dict.get("has_batch_no"):
 		qty = get_batch_qty(batch_no, warehouse) or 0
 
-	stock_val = frappe.db.sql("""SELECT stock_value from tabBin where item_code='{}'""".format(item_code))
+	stock_val = frappe.db.sql("""SELECT stock_value,actual_qty from tabBin where item_code='{}'""".format(item_code))
 	
-	if stock_val and qty:
-		rate = stock_val[0][0]/qty
+	if stock_val:
+		rate = stock_val[0][0]/stock_val[0][1]
 	
 	return {
 		'qty': qty,
