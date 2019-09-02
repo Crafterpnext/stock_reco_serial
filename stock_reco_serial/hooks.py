@@ -26,7 +26,7 @@ app_license = "MIT"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {"Stock Reconciliation" : "public/js/stock_reco.js"}
+#doctype_js = {"Stock Reconciliation" : "public/js/stock_reco.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -79,7 +79,7 @@ doctype_js = {"Stock Reconciliation" : "public/js/stock_reco.js"}
 # ---------------
 # Hook on document methods and events
 
-fixtures = [
+'''fixtures = [
     {
         "doctype": "Custom Field",
         "filters": [
@@ -97,15 +97,9 @@ fixtures = [
             ]
         ]
     }
-]
+]'''
 
-doc_events = {
-    "Stock Reconciliation": {
-            "before_save": "stock_reco_serial.stock_reco_serial.stock_reco.override_methods",
-            "before_submit": "stock_reco_serial.stock_reco_serial.stock_reco.override_methods",
-            "before_insert": "stock_reco_serial.stock_reco_serial.stock_reco.override_methods",
-    },
-}
+
 # Scheduled Tasks
 # ---------------
 
