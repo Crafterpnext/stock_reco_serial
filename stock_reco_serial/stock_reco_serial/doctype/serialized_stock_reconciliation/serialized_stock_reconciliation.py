@@ -346,9 +346,9 @@ class SerializedStockReconciliation(StockController):
 				new_args = args.copy()
 				new_args.update({
 					'actual_qty': -1,
-					'qty_after_transaction': cint(previous_sle.get('qty_after_transaction')) - 1,
-					'warehouse': previous_sle.get("warehouse", '') or row.warehouse,
-					'valuation_rate': previous_sle.get("valuation_rate")
+					'qty_after_transaction': cint(previous_sle[0].get('qty_after_transaction')) - 1,
+					'warehouse': previous_sle[0].get("warehouse", '') or row.warehouse,
+					'valuation_rate': previous_sle[0].get("valuation_rate")
 				})
 
 				sl_entries.append(new_args)
