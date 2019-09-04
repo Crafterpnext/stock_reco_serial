@@ -52,6 +52,7 @@ class SerializedStockReconciliation(StockController):
 
 	def on_submit(self):
 		StockController.check_expense_account = new_check_expense_account
+		
 		self.update_stock_ledger()
 		self.make_gl_entries()
 
@@ -296,14 +297,50 @@ class SerializedStockReconciliation(StockController):
 		for serial_no in serial_nos:
 			args = self.get_sle_for_items(row, [serial_no])
 
-			previous_sle = get_previous_sle({
+			previous_sle = {
 				"item_code": row.item_code,
 				"posting_date": self.posting_date,
 				"posting_time": self.posting_time,
 				"serial_no": serial_no
-			})
+			}
 
-			if previous_sle and row.warehouse != previous_sle.get("warehouse"):
+			operator = "<="
+			order = "desc"
+			limit = "limit 1"
+			for_update = False
+			debug=False
+			conditions = " and timestamp(posting_date, posting_time) {0} timestamp(%(posting_date)s, %(posting_time)s)".format(operator)
+			if previous_sle.get("warehouse"):
+				conditions += " and warehouse = %(warehouse)s"
+			elif previous_sle.get("warehouse_condition"):
+				conditions += " and " + previous_sle.get("warehouse_condition")
+
+			if not previous_sle.get("posting_date"):
+				previous_sle["posting_date"] = "1900-01-01"
+			if not previous_sle.get("posting_time"):
+				previous_sle["posting_time"] = "00:00"
+
+			
+			if previous_sle.get("serial_no"):
+				conditions += " and serial_no like '{}'".format(frappe.db.escape('{0}'.format(previous_sle.get("serial_no"))))
+
+			if operator in (">", "<=") and previous_sle.get("name"):
+				conditions += " and name!=%(name)s"
+
+			previous_sle = frappe.db.sql("""select *, timestamp(posting_date, posting_time) as "timestamp" from `tabStock Ledger Entry`
+				where item_code = %%(item_code)s
+				and ifnull(is_cancelled, 'No')='No'
+				%(conditions)s
+				order by timestamp(posting_date, posting_time) %(order)s, name %(order)s
+				%(limit)s %(for_update)s""" % {
+					"conditions": conditions,
+					"limit": limit or "",
+					"for_update": for_update and "for update" or "",
+					"order": order
+				}, previous_sle, as_dict=1, debug=debug)
+
+
+			if previous_sle and row.warehouse != previous_sle[0].get("warehouse"):
 				# If serial no exists in different warehouse
 
 				new_args = args.copy()
@@ -497,15 +534,24 @@ def get_stock_balance_for(item_code, warehouse,
 	if item_dict.get("has_batch_no"):
 		qty = get_batch_qty(batch_no, warehouse) or 0
 
-	stock_val = frappe.db.sql("""SELECT stock_value,actual_qty from tabBin where item_code='{}'""".format(item_code))
+	stock_val = frappe.db.sql("""SELECT sum(stock_value),sum(actual_qty) from tabBin where item_code='{}'""".format(item_code))
+	warehouse_val = frappe.db.sql("""SELECT stock_value,actual_qty from tabBin where item_code='{}' and warehouse = '{}' """.format(item_code,warehouse))
 	
+	valuation_rate = 0.00
 	if stock_val:
-		rate = stock_val[0][0]/stock_val[0][1]
+		if stock_val[0][0] and stock_val[0][1]:
+			valuation_rate = stock_val[0][0]/stock_val[0][1]
 	
+
+	if warehouse_val:
+		if warehouse_val[0][0] and warehouse_val[0][1]:
+			rate = warehouse_val[0][0]/warehouse_val[0][1]
+
 	return {
 		'qty': qty,
 		'rate': rate,
-		'serial_nos': serial_nos
+		'serial_nos': serial_nos,
+		'valuation_rate':valuation_rate
 	}
 
 def get_qty_rate_for_serial_nos(item_code, warehouse, posting_date, posting_time, item_dict):
