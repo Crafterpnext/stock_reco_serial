@@ -89,7 +89,7 @@ frappe.ui.form.on("Serialized Stock Reconciliation", {
 				},
 				callback: function(r) {
 					frappe.model.set_value(cdt, cdn, "qty", r.message.qty);
-					frappe.model.set_value(cdt, cdn, "valuation_rate", r.message.rate);
+					frappe.model.set_value(cdt, cdn, "valuation_rate", r.message.valuation_rate);
 					frappe.model.set_value(cdt, cdn, "current_qty", r.message.qty);
 					frappe.model.set_value(cdt, cdn, "current_valuation_rate", r.message.rate);
 					frappe.model.set_value(cdt, cdn, "current_amount", r.message.rate * r.message.qty);
