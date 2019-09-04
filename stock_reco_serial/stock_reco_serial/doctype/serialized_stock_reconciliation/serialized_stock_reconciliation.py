@@ -322,7 +322,7 @@ class SerializedStockReconciliation(StockController):
 
 			
 			if previous_sle.get("serial_no"):
-				conditions += " and serial_no like '{}'".format(frappe.db.escape('{0}'.format(previous_sle.get("serial_no"))))
+				conditions += " and serial_no like '{}'".format(frappe.db.escape('%{0}%'.format(previous_sle.get("serial_no"))))
 
 			if operator in (">", "<=") and previous_sle.get("name"):
 				conditions += " and name!=%(name)s"
